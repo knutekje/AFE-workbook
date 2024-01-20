@@ -5,4 +5,3 @@ editor: visual
 ---
 
 README? How about you read you? A long hard look in the mirror, a bit of self reflection and maybe some personal growth.
-Like look for the somewhere else
