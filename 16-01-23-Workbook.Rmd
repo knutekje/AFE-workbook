@@ -1,0 +1,123 @@
+---
+title: "AFE-workbook"
+output: html_document
+author: "Knut Edvard Kjersem"
+date: "2024-01-16"
+---
+# Affordable Fish Export AS
+AFE is looking to expand into new European markets. They are currently only dealing with non-farmed saltwater fish. They don’t deal in pelagic fish either, as its on a different scale. They are offering competitive prices due to being very close to the source and they are primary landing for their exporting commodity. 
+They are looking to identify emerging markets in Europe and to find viable established markets.
+Audience and Stakeholders will be the same in project. As the owners, board members and managers are all two people.
+We want to identify potential new markets. Stakeholders want to target which market to expand into, to avoid extra cost and lost income going into the wrong market Markets where they’ve had success expanding into earlier have the following characteristics.
+*High amount of high price low volume products (i.e. Langoustine and lobsters)
+*Within two-three days of travel time by road
+*Countries with metrics that should be of interest would be Sweden and Germany
+
+## Data source
+SSB Data on exported fish and seafood generated yearly based on data collected by credible sources in Norway centralised statistical bureau. Aggregated from other government bodies like the customs agency.
+
+# Processing data
+### Loading essential packages
+```{r message=FALSE, eval=FALSE}
+ install.packages("tidyverse")
+ library("tidyverse")
+```
+### Loading downloaded CSV
+```{r message=FALSE, eval=FALSE}
+fish2021 <- read_delim("fisk2021.csv",
+           delim = ";", escape_double = FALSE, col_names = TRUE, 
+           locale = locale(encoding = "latin1"), 
+           trim_ws = TRUE, skip = 2,
+           quote = "") |>
+ rename_with( ~ stringr::str_remove_all(., '"')) 
+```
+Initially there was some problems importing the the file
+The first problem was the special characters in the file
+Which was solved by adding the 
+```{r eval=FALSE}
+locale = locale(encoding = "latin1")
+```
+Following that I had more issues with the file not being split at the delimiter for the column names.
+These issues came from there being a lot of quoteation marks in the wrong places in the data.
+It was fixed by adding the following two lines 
+```{r eval=FALSE}
+col_names = TRUE
+quote = ""
+```
+## Cleaning of data
+At first glance at our dataframe. We could see that the column names had some words, symbols and more that weren't needed, and made it harder to read the data. 
+The following lines got rid of some, change the text to all lower case, and removed trailing and leading white spaces. Also renaming the column with index 10, to "skalldyr", to be easier to work with.
+```{r  eval=FALSE}
+ names(fish2021) = gsub(pattern = "Verdi.*.2021", replacement = "", x = names(fish2021))
+ names(fish2021) <- trimws(tolower(names(fish2021)))
+ fish2021 <- rename(fish2021, "skalldyr" = 10 ) 
+
+ 
+```
+After that we got rid of outliers and irrelevant data. The UK, or rather 'Storbritannia', was removed due to the difficult nature of dealing with them after Brexit.
+"Laks" and "Ørret" was removed due them both being farmed, and not a product we deal with.
+"Makrell" and "sild", are both done by pelagic factory fishing and not a product we sell. And though not in the same category "Reker" are excluded for the same reason. And the "Total"column, with index 2, was filled with static date, and wasnt a sum of our cleaned data. Iceland is also removed due to being an island
+```{r  eval=FALSE}
+fish2021 <- fish2021 %>% 
+   filter(!land=='Storbritannia') %>% 
+   filter(!land=='Island') %>% 
+   select(-c(2,"reker", "laks", "makrell", "sild", "ørret")) 
+```
+
+
+
+```{r echo=FALSE, message=FALSE}
+install.packages("tidyverse")
+library("tidyverse")
+ fish2021 <- read_delim("fisk2021.csv",
+           delim = ";", escape_double = FALSE, col_names = TRUE, 
+           locale = locale(encoding = "latin1"), 
+           trim_ws = TRUE, skip = 2,
+           quote = "") |>
+ rename_with( ~ stringr::str_remove_all(., '"')) 
+ names(fish2021) = gsub(pattern = "Verdi.*.2021", replacement = "", x = names(fish2021))
+ names(fish2021) <- trimws(tolower(names(fish2021)))
+
+ fish2021 <- fish2021 %>% 
+   filter(!land=='Storbritannia') %>% 
+   filter(!land=='Island') %>% 
+
+   select(-c(2,"reker", "laks", "makrell", "sild", "ørret")) 
+ fish2021 <- rename(fish2021, "skalldyr" = 10 ) 
+
+ fish2021["total"] <- rowSums(fish2021[-1])
+ fish2021 <- subset(fish2021, (rowSums(fish2021[-1])) > 100)
+ fish2021 <- fish2021[order(-(rowSums(fish2021[-1]))),]
+```
+# Analysis
+### Big potential markets
+Our first visualsation shows us the top six, countries in Europe in terms of amount of exports recieved.
+I feel its a natural part of our findings to start with. To see if there is any major markets we have neglected. And we can already here identify four markets which we have yet to expand into, Portugal Denmark, Poland and the Netherlands. 
+
+The best out of these four would be Denmark, which is close to us and easy to secure the shipment. But also 
+Because its market is made up from a variety of species we deal in, in addition to have a large market for shellfish
+
+We also see Portugal being a very big markets, but after checking in with our SME, it's made clear that market is majority salted and dried cod.
+
+```{r echo=FALSE}
+head(fish2021[-11]) %>% 
+   pivot_longer(
+     cols = !land,
+     names_to = "fish",
+     values_to = "amount"
+   ) %>% 
+   ggplot(., aes(x = land,y=amount, fill = fish)) + 
+   geom_bar(stat = "identity") +
+   labs(x="Country", y="Total amount of sales in mill.nok", title="The six biggest markets in Europe") 
+head(fish2021)
+```
+### Potential markets for luxury items
+We have also taken a look at potential markets for our luxury items like langoustine and lobster. And we have defined a market big enough to be worth exploring as being bigger than 30mill Nok. 
+
+And we can see that Belgium, Finland, France, and Spain, are all markets thats should be of interest to us for expanding our business
+
+```{r}
+(subset(fish2021[-11], skalldyr > 30)) 
+ggplot(data = (subset(fish2021[-11], skalldyr > 30)), mapping = aes(y=skalldyr, x=land)) + geom_col()
+
+
