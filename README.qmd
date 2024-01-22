@@ -4,4 +4,6 @@ format: html
 editor: visual
 ---
 
-README? How about you read you? A long hard look in the mirror, a bit of self reflection and maybe some personal growth.
+Might be considered a little over kill using R for this dataset. but Its all approached like it was a larger dataset.
+
+A portfolio project by me to showcase expertise in R. Extra viz made in tableau included
